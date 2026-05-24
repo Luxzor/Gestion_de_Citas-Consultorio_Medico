@@ -154,41 +154,6 @@ codigo-fuente/
 
 ---
 
-## Diseño del Frontend
-
-El frontend utiliza el sistema de diseño **"Verdure Clínica"**, implementado en `frontend/src/styles/global.css` y `frontend/public/index.html`.
-
-### Tipografía (Google Fonts)
-
-| Fuente       | Uso                                          |
-|--------------|----------------------------------------------|
-| **Fraunces** | Títulos de página, nombres, valores numéricos en stat-cards |
-| **Outfit**   | Todo el texto de cuerpo, labels, botones     |
-
-### Paleta de colores
-
-| Token              | Valor     | Uso                                  |
-|--------------------|-----------|--------------------------------------|
-| Primary            | `#15423a` | Navbar, botones primarios, acentos   |
-| Primary light      | `#e8f2ef` | Fondos de sección de signos vitales  |
-| Accent             | `#c8945a` | Badges de notificaciones nuevas      |
-| Background         | `#f0f5f2` | Fondo general de la aplicación       |
-| Text               | `#0f2b24` | Texto principal                      |
-| Text muted         | `#4d7a6e` | Labels, texto secundario             |
-
-### Características visuales
-
-- **Login:** panel dividido 50/50 — branding oscuro a la izquierda, formulario a la derecha
-- **Dashboard:** stat-cards con contadores en `Fraunces` + acciones rápidas con íconos SVG
-- **Citas:** tarjetas con borde izquierdo coloreado según estado (azul / verde / rojo) y animación escalonada
-- **Nueva cita:** indicador de pasos visual (círculos numerados con línea conectora)
-- **Pacientes:** lista con avatares de iniciales generados automáticamente desde el nombre
-- **Historial clínico:** timeline vertical con entradas expandibles; valores vitales destacados
-- **Notificaciones:** borde ámbar dorado en avisos no leídos
-- **Animaciones CSS:** `fadeIn`, `slideUp` con `animation-delay` escalonado en listas
-
----
-
 ## Pruebas de concurrencia
 
 Para verificar el mecanismo de exclusión mutua ejecute el script de prueba:

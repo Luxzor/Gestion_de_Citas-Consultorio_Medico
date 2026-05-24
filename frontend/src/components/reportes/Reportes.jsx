@@ -1,33 +1,34 @@
-/**
- * Pantalla de reportes con tres pestanas:
- *   1. Lista de pacientes
- *   2. Calendario de citas
- *   3. Historial clinico de un paciente
- * Todos los reportes requieren autenticacion valida.
- */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { reporteApi } from '../../api/reporteApi';
 import { pacienteApi } from '../../api/pacienteApi';
 import Spinner from '../common/Spinner';
 import AlertMsg from '../common/AlertMsg';
-import { css, colors } from '../../utils/styles';
 
-const hoy  = new Date().toISOString().split('T')[0];
-const mes  = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0];
+const hoy = new Date().toISOString().split('T')[0];
+const mes = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0];
+
+const ESTADO_CFG = {
+  programada: { cls: 'badge-blue',  label: 'Programada' },
+  atendida:   { cls: 'badge-green', label: 'Atendida'   },
+  cancelada:  { cls: 'badge-red',   label: 'Cancelada'  },
+};
+
+function initiales(nombre = '') {
+  return nombre.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+}
 
 export default function Reportes() {
-  const [pestana,    setPestana]    = useState('pacientes');
-  const [pacientes,  setPacientes]  = useState([]);
-  const [calendario, setCalendario] = useState([]);
+  const [pestana,      setPestana]      = useState('pacientes');
+  const [pacientes,    setPacientes]    = useState([]);
+  const [calendario,   setCalendario]   = useState([]);
   const [pacientesLst, setPacientesLst] = useState([]);
-  const [idPacHist,  setIdPacHist]  = useState('');
-  const [desde,      setDesde]      = useState(hoy);
-  const [hasta,      setHasta]      = useState(mes);
-  const [cargando,   setCargando]   = useState(false);
-  const [error,      setError]      = useState('');
+  const [idPacHist,    setIdPacHist]    = useState('');
+  const [desde,        setDesde]        = useState(hoy);
+  const [hasta,        setHasta]        = useState(mes);
+  const [cargando,     setCargando]     = useState(false);
+  const [error,        setError]        = useState('');
 
-  // Cargar lista de pacientes para el selector de historial
   useEffect(() => {
     pacienteApi.listar().then(({ data }) => setPacientesLst(data)).catch(() => {});
   }, []);
@@ -51,26 +52,31 @@ export default function Reportes() {
   useEffect(() => {
     if (pestana === 'pacientes') cargarPacientes();
     else if (pestana === 'calendario') cargarCalendario();
-  // eslint-disable-next-line
+    // eslint-disable-next-line
   }, [pestana]);
 
-  const tabStyle = (activa) => ({
-    padding: '10px 20px', cursor: 'pointer', border: 'none',
-    borderBottom: activa ? `2px solid ${colors.primary}` : '2px solid transparent',
-    background: 'none', fontWeight: activa ? 700 : 400,
-    color: activa ? colors.primary : colors.textLight, fontSize: 14,
-  });
+  const TABS = [
+    { id: 'pacientes',  label: 'Lista de Pacientes' },
+    { id: 'calendario', label: 'Calendario de Citas' },
+    { id: 'historial',  label: 'Historial Clínico'  },
+  ];
 
   return (
-    <div style={{ padding: 24 }}>
-      <h2 style={{ marginBottom: 20 }}>Reportes</h2>
-      <div style={{ borderBottom: `1px solid ${colors.border}`, marginBottom: 24 }}>
-        {[
-          { id: 'pacientes',  label: 'Lista de Pacientes' },
-          { id: 'calendario', label: 'Calendario de Citas' },
-          { id: 'historial',  label: 'Historial Clinico' },
-        ].map(t => (
-          <button key={t.id} onClick={() => setPestana(t.id)} style={tabStyle(pestana === t.id)}>
+    <div style={{ padding: '32px 28px', maxWidth: 1000, margin: '0 auto' }}>
+
+      <div style={{ marginBottom: 28 }}>
+        <h1 className="page-title">Reportes</h1>
+        <p className="page-subtitle">Información consolidada del consultorio</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="tabs">
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            className={`tab-btn ${pestana === t.id ? 'active' : ''}`}
+            onClick={() => setPestana(t.id)}
+          >
             {t.label}
           </button>
         ))}
@@ -78,98 +84,138 @@ export default function Reportes() {
 
       <AlertMsg tipo="error" mensaje={error} />
 
-      {/* Pestana: Lista de Pacientes */}
+      {/* Pestaña: Lista de Pacientes */}
       {pestana === 'pacientes' && (
-        <>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-            <button onClick={cargarPacientes} style={css.btnSecondary}>Actualizar</button>
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
+            <button onClick={cargarPacientes} className="btn btn-secondary btn-sm">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+              </svg>
+              Actualizar
+            </button>
           </div>
+
           {cargando ? <Spinner /> : (
-            <div style={{ ...css.card, padding: 0, overflow: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: '#f8fafc' }}>
-                    {['#','Nombre','Correo','Telefono','Edad','Sexo','Accion'].map(h => (
-                      <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13,
-                        fontWeight: 600, color: colors.textLight, borderBottom: `1px solid ${colors.border}` }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {pacientes.map((p, i) => (
-                    <tr key={p.idPaciente} style={{ borderBottom: `1px solid ${colors.border}` }}>
-                      <td style={{ padding: '10px 16px', fontSize: 14, color: colors.textLight }}>{i+1}</td>
-                      <td style={{ padding: '10px 16px', fontSize: 14, fontWeight: 600 }}>{p.nombre}</td>
-                      <td style={{ padding: '10px 16px', fontSize: 14 }}>{p.correo}</td>
-                      <td style={{ padding: '10px 16px', fontSize: 14 }}>{p.telefono}</td>
-                      <td style={{ padding: '10px 16px', fontSize: 14 }}>{p.edad}</td>
-                      <td style={{ padding: '10px 16px', fontSize: 14 }}>{p.sexo}</td>
-                      <td style={{ padding: '10px 16px' }}>
-                        <Link to={`/reportes/historial/${p.idPaciente}`} style={{ color: colors.primary, fontSize: 13 }}>
-                          Ver historial
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {pacientes.length === 0 ? (
+                  <div className="empty-state" style={{ padding: 40 }}>
+                    No hay pacientes registrados.
+                  </div>
+                ) : pacientes.map((p, i) => (
+                  <div key={p.idPaciente} className="list-item" style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '12px 20px',
+                    borderBottom: i < pacientes.length - 1 ? '1px solid #e3eeeb' : 'none',
+                  }}>
+                    <span style={{ color: '#9dbcb3', fontSize: 13, width: 24, flexShrink: 0 }}>{i + 1}</span>
+                    <div className="avatar avatar-sm">{initiales(p.nombre)}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: '#0f2b24' }}>{p.nombre}</div>
+                      <div style={{ fontSize: 12, color: '#4d7a6e' }}>{p.correo} · {p.telefono}</div>
+                    </div>
+                    <div style={{ fontSize: 13, color: '#4d7a6e', flexShrink: 0 }}>
+                      {p.edad} años · {p.sexo === 'M' ? 'Masc.' : p.sexo === 'F' ? 'Fem.' : p.sexo}
+                    </div>
+                    <Link to={`/reportes/historial/${p.idPaciente}`} className="btn btn-secondary btn-sm">
+                      Ver historial
+                    </Link>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-        </>
+        </div>
       )}
 
-      {/* Pestana: Calendario de Citas */}
+      {/* Pestaña: Calendario de Citas */}
       {pestana === 'calendario' && (
-        <>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap' }}>
-            <div>
-              <label style={css.label}>Desde</label>
-              <input style={{ ...css.input, width: 160 }} type="date" value={desde}
+        <div>
+          <div className="card" style={{ marginBottom: 20, display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <div className="field-group" style={{ margin: 0 }}>
+              <label className="field-label">Desde</label>
+              <input className="input-field" style={{ width: 170 }} type="date" value={desde}
                 onChange={e => setDesde(e.target.value)} />
             </div>
-            <div>
-              <label style={css.label}>Hasta</label>
-              <input style={{ ...css.input, width: 160 }} type="date" value={hasta}
+            <div className="field-group" style={{ margin: 0 }}>
+              <label className="field-label">Hasta</label>
+              <input className="input-field" style={{ width: 170 }} type="date" value={hasta}
                 onChange={e => setHasta(e.target.value)} />
             </div>
-            <button onClick={cargarCalendario} style={css.btnPrimary}>Buscar</button>
+            <button onClick={cargarCalendario} className="btn btn-primary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              Buscar
+            </button>
           </div>
+
           {cargando ? <Spinner /> : calendario.length === 0 ? (
-            <div style={{ ...css.card, textAlign: 'center', color: colors.textLight }}>
-              No hay citas en el rango seleccionado.
+            <div className="card">
+              <div className="empty-state">No hay citas en el rango seleccionado.</div>
             </div>
           ) : calendario.map(dia => (
-            <div key={dia.fecha} style={{ ...css.card, marginBottom: 12 }}>
-              <h3 style={{ margin: '0 0 12px', fontSize: 15, color: colors.primary }}>{dia.fecha}</h3>
-              {dia.citas.map(c => (
-                <div key={c.idCita} style={{ display: 'flex', justifyContent: 'space-between',
-                  padding: '8px 0', borderBottom: `1px solid ${colors.border}`, fontSize: 14 }}>
-                  <span>{c.horaInicio} - {c.horaFin}</span>
-                  <span style={{ fontWeight: 600 }}>{c.nombrePaciente}</span>
-                  <span style={{ color: colors.textLight }}>{c.estado}</span>
-                </div>
-              ))}
+            <div key={dia.fecha} className="card list-item" style={{ marginBottom: 14, padding: 0, overflow: 'hidden' }}>
+              <div style={{
+                background: '#e8f2ef', padding: '12px 20px',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}>
+                <span style={{ fontFamily: "'Fraunces', serif", fontSize: 16, fontWeight: 700, color: '#0f2b24' }}>
+                  {dia.fecha}
+                </span>
+                <span className="badge badge-primary">{dia.citas.length} cita{dia.citas.length !== 1 ? 's' : ''}</span>
+              </div>
+              {dia.citas.map((c, i) => {
+                const cfg = ESTADO_CFG[c.estado] || {};
+                return (
+                  <div key={c.idCita} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '10px 20px',
+                    borderBottom: i < dia.citas.length - 1 ? '1px solid #e3eeeb' : 'none',
+                    gap: 12,
+                  }}>
+                    <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 15, color: '#0f2b24', flexShrink: 0 }}>
+                      {c.horaInicio}–{c.horaFin}
+                    </span>
+                    <span style={{ fontSize: 14, color: '#0f2b24', flex: 1 }}>{c.nombrePaciente}</span>
+                    {cfg.cls && <span className={`badge ${cfg.cls}`}>{cfg.label}</span>}
+                  </div>
+                );
+              })}
             </div>
           ))}
-        </>
+        </div>
       )}
 
-      {/* Pestana: Historial Clinico */}
+      {/* Pestaña: Historial Clínico */}
       {pestana === 'historial' && (
-        <div style={{ maxWidth: 500 }}>
-          <div style={{ marginBottom: 16 }}>
-            <label style={css.label}>Seleccione un paciente</label>
-            <select style={css.input} value={idPacHist} onChange={e => setIdPacHist(e.target.value)}>
-              <option value="">-- Seleccione --</option>
+        <div className="card" style={{ maxWidth: 520 }}>
+          <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 17, fontWeight: 600, color: '#0f2b24', margin: '0 0 18px' }}>
+            Seleccionar paciente
+          </h3>
+          <div className="field-group">
+            <label className="field-label">Paciente</label>
+            <select
+              className="input-field"
+              value={idPacHist}
+              onChange={e => setIdPacHist(e.target.value)}
+            >
+              <option value="">— Seleccione un paciente —</option>
               {pacientesLst.map(p => (
                 <option key={p.idPaciente} value={p.idPaciente}>{p.nombre}</option>
               ))}
             </select>
           </div>
           {idPacHist && (
-            <Link to={`/reportes/historial/${idPacHist}`}
-              style={{ ...css.btnPrimary, textDecoration: 'none', display: 'inline-block' }}>
-              Ver historial clinico
+            <Link
+              to={`/reportes/historial/${idPacHist}`}
+              className="btn btn-primary"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              </svg>
+              Ver historial clínico
             </Link>
           )}
         </div>

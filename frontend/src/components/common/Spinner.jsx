@@ -1,13 +1,29 @@
-/** Indicador de carga animado. */
-export default function Spinner() {
+export default function Spinner({ size = 36, minHeight = 200 }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight,
+      gap: 14,
+    }}>
       <div style={{
-        width: 36, height: 36, border: '4px solid #e2e8f0',
-        borderTop: '4px solid #2563eb', borderRadius: '50%',
-        animation: 'girar 0.8s linear infinite',
+        width: size,
+        height: size,
+        border: `3px solid #e3eeeb`,
+        borderTopColor: '#15423a',
+        borderRadius: '50%',
+        animation: 'spin 0.75s linear infinite',
       }} />
-      <style>{`@keyframes girar { to { transform: rotate(360deg); } }`}</style>
+      <span style={{
+        fontFamily: "'Outfit', sans-serif",
+        fontSize: 13,
+        color: '#4d7a6e',
+        letterSpacing: '0.02em',
+      }}>
+        Cargando...
+      </span>
     </div>
   );
 }

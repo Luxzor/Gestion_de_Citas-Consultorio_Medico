@@ -1,14 +1,25 @@
-/** Componente de alerta para mensajes de exito o error. */
 export default function AlertMsg({ tipo, mensaje }) {
   if (!mensaje) return null;
-  const colores = {
-    exito: { background: '#f0fdf4', border: '1px solid #86efac', color: '#15803d' },
-    error: { background: '#fef2f2', border: '1px solid #fca5a5', color: '#dc2626' },
-    info:  { background: '#eff6ff', border: '1px solid #93c5fd', color: '#1d4ed8' },
+
+  const TIPOS = {
+    exito: { cls: 'alert-success', icon: 'check' },
+    error: { cls: 'alert-error',   icon: 'x'     },
+    info:  { cls: 'alert-info',    icon: 'info'  },
   };
+
+  const cfg = TIPOS[tipo] || TIPOS.info;
+
   return (
-    <div style={{ ...colores[tipo], padding: '10px 14px', borderRadius: 6, fontSize: 14, marginBottom: 16 }}>
-      {mensaje}
+    <div className={`alert ${cfg.cls}`}>
+      <AlertIcon name={cfg.icon} />
+      <span>{mensaje}</span>
     </div>
   );
+}
+
+function AlertIcon({ name }) {
+  const p = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', style: { flexShrink: 0, marginTop: 1 } };
+  if (name === 'check') return <svg {...p}><polyline points="20 6 9 17 4 12"/></svg>;
+  if (name === 'x')     return <svg {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>;
+  return <svg {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>;
 }

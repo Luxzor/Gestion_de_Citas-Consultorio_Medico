@@ -1,0 +1,104 @@
+# ====================================================================
+# Docker Compose - Sistema de Citas Medicas
+# Servicios: MySQL 8, Redis 7, Backend Spring Boot, Frontend React
+# ====================================================================
+version: '3.9'
+
+services:
+
+  # ------------------------------------------------------------------
+  # Base de datos MySQL 8
+  # ------------------------------------------------------------------
+  mysql:
+    image: mysql:8.0
+    container_name: consultorio_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootSecret2026}
+      MYSQL_DATABASE: consultorio_db
+      MYSQL_USER: ${DB_USERNAME:-consultorio}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-consultSecret2026}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - consultorio_net
+
+  # ------------------------------------------------------------------
+  # Redis 7 para bloqueos distribuidos (Redlock)
+  # ------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: consultorio_redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redisSecret2026}
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - consultorio_net
+
+  # ------------------------------------------------------------------
+  # Backend Spring Boot (Capa de Logica de Negocio)
+  # ------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: consultorio_backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/consultorio_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      DB_USERNAME: ${DB_USERNAME:-consultorio}
+      DB_PASSWORD: ${DB_PASSWORD:-consultSecret2026}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redisSecret2026}
+      JWT_SECRET: ${JWT_SECRET:-Y29uc3VsdG9yaW9NZWRpY29TZWNyZXRLZXkyMDI2U2VjdXJl}
+      JWT_EXPIRATION_MS: 28800000
+      APP_ENCRYPTION_KEY: ${APP_ENCRYPTION_KEY:-Q29uc3VsdG9yaW9BRVMyNTZLZXlTZWN1cmUyMDI2}
+      CORS_ORIGINS: http://localhost:3000
+    ports:
+      - "8080:8080"
+    networks:
+      - consultorio_net
+
+  # ------------------------------------------------------------------
+  # Frontend React (Capa de Presentacion)
+  # ------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: consultorio_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      REACT_APP_API_URL: http://localhost:8080/api
+    ports:
+      - "3000:80"
+    networks:
+      - consultorio_net
+
+volumes:
+  mysql_data:
+
+networks:
+  consultorio_net:
+    driver: bridge
